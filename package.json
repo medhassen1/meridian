@@ -1,0 +1,45 @@
+{
+  "name": "meridian",
+  "version": "0.6.0",
+  "description": "A deterministic transit routing engine: GTFS feed loading, service calendars, RAPTOR journey search, isochrones, and fares",
+  "type": "module",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "meridian": "./dist/cli/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@vitest/coverage-v8": "2.1.8",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
+  },
+  "keywords": [
+    "gtfs",
+    "transit",
+    "raptor",
+    "journey-planner",
+    "isochrone"
+  ]
+}
