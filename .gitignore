@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+junit.xml
+ctrf-report.json
+.vitest-reports/
+
+.env
+.env.*
+.DS_Store
+.idea/
+.vscode/
+*.log
+npm-debug.log*

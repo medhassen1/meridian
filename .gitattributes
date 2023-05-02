@@ -1,0 +1,9 @@
+# Normalise line endings on checkout and commit. Report output is compared
+# byte for byte in tests, so a CRLF checkout would fail the suite on Windows.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.zip binary
+
+package-lock.json linguist-generated=true
