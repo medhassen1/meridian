@@ -84,7 +84,11 @@ export function* tokenise(text: string, options: LexerOptions): Generator<Row> {
     return row;
   };
 
-  while (index < source.length) {
+  // A field is expected whenever input remains, and also immediately after a
+  // comma even at end of input: `a,b,` has three fields, the last one empty.
+  let expectField = source.length > 0;
+
+  while (expectField) {
     if (fields.length === 0) {
       rowLine = line;
     }
@@ -163,10 +167,11 @@ export function* tokenise(text: string, options: LexerOptions): Generator<Row> {
       if (row !== undefined) {
         yield row;
       }
+      expectField = index < source.length;
       continue;
     }
     // End of input with no trailing newline.
-    break;
+    expectField = false;
   }
 
   if (fields.length > 0) {
