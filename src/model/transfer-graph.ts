@@ -149,7 +149,7 @@ export class TransferGraph {
     }
 
     if (options.transitiveClosure ?? true) {
-      closeTransitively(times, maxTransferSeconds);
+      closeTransitively(times, maxTransferSeconds, forbidden);
     }
 
     const adjacency: Footpath[][] = times.map((edges, from) =>
@@ -253,8 +253,16 @@ function collectPublishedRules(
  * extremely sparse and the bound keeps chains to two or three hops, so the
  * loop converges in a handful of passes. The pass counter is a guard against a
  * pathological feed rather than an expected limit.
+ *
+ * Prohibited pairs are excluded throughout. Closure would otherwise reinstate
+ * an interchange the agency explicitly forbade, by routing it through a third
+ * stop — which is precisely the walk the prohibition exists to prevent.
  */
-function closeTransitively(times: Array<Map<number, number>>, maxSeconds: number): void {
+function closeTransitively(
+  times: Array<Map<number, number>>,
+  maxSeconds: number,
+  forbidden: ReadonlySet<number>,
+): void {
   const MAX_PASSES = 8;
   for (let pass = 0; pass < MAX_PASSES; pass += 1) {
     let changed = false;
@@ -270,7 +278,7 @@ function closeTransitively(times: Array<Map<number, number>>, maxSeconds: number
           continue;
         }
         for (const [to, secondLeg] of onward) {
-          if (to === from) {
+          if (to === from || forbidden.has(edgeKey(from, to))) {
             continue;
           }
           const total = firstLeg + secondLeg;
