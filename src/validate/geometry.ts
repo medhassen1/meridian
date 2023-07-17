@@ -8,7 +8,6 @@
  */
 
 import { boundingBoxOf, boxWidthDegrees } from "../geo/bbox.js";
-import { centroid } from "../geo/coordinate.js";
 import { haversineDistance } from "../geo/distance.js";
 import { projectOnto } from "../geo/polyline.js";
 import { RouteType, routeTypeName } from "../feed/routes.js";
@@ -123,8 +122,13 @@ export const validateDuplicatePositions: Validator = ({ feed }, report) => {
 /**
  * Reports stops far outside the cluster the rest of the feed occupies.
  *
- * The threshold is a multiple of the *median* distance from the centroid, not
- * the mean: a single stop at 0,0 drags a mean far enough to hide itself.
+ * Both the reference point and the threshold are medians rather than means,
+ * and that matters twice over. A single stop at 0,0 drags a centroid hundreds
+ * of kilometres towards itself, far enough that it no longer looks unusual
+ * against the others — the outlier hides inside the statistic meant to catch
+ * it. A component-wise median position barely moves, and a threshold taken as
+ * a multiple of the median distance from it stays anchored to where the
+ * network actually is.
  */
 export const validateOutlierStops: Validator = ({ feed }, report) => {
   const located = feed.stops.filter(
@@ -135,7 +139,7 @@ export const validateOutlierStops: Validator = ({ feed }, report) => {
   }
 
   const points = located.map((stop) => stop.coordinate as Coordinate);
-  const centre = centroid(points);
+  const centre = medianPosition(points);
   const distances = points.map((point) => haversineDistance(centre, point));
   const median = medianOf(distances);
   if (median <= 0) {
@@ -258,4 +262,18 @@ function medianOf(values: readonly number[]): number {
   const sorted = values.slice().sort((a, b) => a - b);
   const middle = Math.floor((sorted.length - 1) / 2);
   return sorted[middle] ?? 0;
+}
+
+/**
+ * The component-wise median of a set of points.
+ *
+ * Not a true geometric median, but it needs no iteration and it is resistant
+ * to outliers in exactly the way this check requires. A feed spanning the
+ * antimeridian would confuse it; that case has its own rule.
+ */
+function medianPosition(points: readonly Coordinate[]): Coordinate {
+  return {
+    latitude: medianOf(points.map((point) => point.latitude)),
+    longitude: medianOf(points.map((point) => point.longitude)),
+  };
 }
