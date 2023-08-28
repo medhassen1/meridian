@@ -52,3 +52,41 @@ jobs:
           name: coverage
           path: coverage/
           retention-days: 7
+
+  determinism:
+    name: Repeated runs agree
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - run: npm ci
+
+      # Determinism is a design constraint, not an aspiration: nothing reads
+      # the clock, the host time zone, or the environment. Two runs of the same
+      # suite must therefore produce byte-identical coverage, which they cannot
+      # if a test depends on ordering or on wall-clock time.
+      - name: Run the suite twice and compare coverage
+        run: |
+          npm run test:coverage
+          mv coverage/coverage-summary.json first-run.json
+          npm run test:coverage
+          cmp first-run.json coverage/coverage-summary.json
+
+  image:
+    name: Repository image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Builds through a wrapper that reproduces the repository-image
+      # service's injected steps, so a Dockerfile that only works standalone
+      # cannot pass here.
+      - name: Build and smoke-test the repository image
+        run: ./scripts/build-repo-image.sh meridian-repo-image:ci
