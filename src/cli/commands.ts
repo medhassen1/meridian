@@ -14,8 +14,8 @@ import { summariseFeed, type GtfsFeed } from "../feed/feed.js";
 import { loadFeed } from "../feed/loader.js";
 import { buildNetwork } from "../model/builder.js";
 import type { Network } from "../model/network.js";
-import { computeReach } from "../isochrone/reach.js";
-import { bandsOf, rasterise, renderGrid, toGeoJson } from "../isochrone/contour.js";
+import { computeReach, reachProfile } from "../isochrone/reach.js";
+import { rasterise, renderGrid, toGeoJson } from "../isochrone/contour.js";
 import { planJourney, planProfile } from "../planner.js";
 import { renderDepartureBoard, renderFeedSummary, renderNetworkStatistics, renderPlan } from "../report/text.js";
 import { planToJson, reachToJson } from "../report/json.js";
@@ -313,7 +313,11 @@ export const reachCommand: Command = {
       };
     }
 
-    const bands = bandsOf(result, [budget / 3, (budget * 2) / 3, budget]);
+    // Cumulative counts, not bands: "within 20 minutes" must include the stops
+    // reachable in ten. `bandsOf` partitions instead, which is the right shape
+    // for colouring a map and the wrong one for this line.
+    const thirds = [Math.round(budget / 3), Math.round((budget * 2) / 3), budget];
+    const cumulative = reachProfile(result, thirds);
     const rows = result.reached.map((stop) => [
       stop.stopId,
       stop.stopName,
@@ -334,8 +338,8 @@ export const reachCommand: Command = {
           rows,
         ),
         "",
-        bands
-          .map((band) => `within ${Math.round(band.budgetSeconds / 60)} min: ${band.stops.length} stop(s)`)
+        cumulative
+          .map((entry) => `within ${Math.round(entry.budgetSeconds / 60)} min: ${entry.stops} stop(s)`)
           .join("\n"),
       ].join("\n"),
       stderr: "",

@@ -435,6 +435,31 @@ describe("the CLI against a real feed", () => {
     expect(output.stdout).toContain("within");
   });
 
+  it("summarises reachability with cumulative counts", () => {
+    const output = run([
+      "reach",
+      "--feed",
+      directory,
+      "--from",
+      "CENTRAL_A",
+      "--date",
+      "20230605",
+      "--time",
+      "07:55:00",
+      "--budget",
+      "3600",
+    ]);
+    const counts = output.stdout
+      .split("\n")
+      .filter((line) => line.startsWith("within "))
+      .map((line) => Number(/: (\d+) stop/.exec(line)?.[1] ?? "0"));
+
+    expect(counts).toHaveLength(3);
+    // Cumulative, so each band includes everything the tighter ones did.
+    expect(counts[1]).toBeGreaterThanOrEqual(counts[0] as number);
+    expect(counts[2]).toBeGreaterThanOrEqual(counts[1] as number);
+  });
+
   it("emits reachability as JSON and GeoJSON", () => {
     const base = [
       "reach",
